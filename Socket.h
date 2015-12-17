@@ -4,11 +4,11 @@
 //for the network api
 #include <wait.h>
 #include <unistd.h>
-#include <sys/type.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <ctime>
-#include <arpa/inet>
+#include <arpa/inet.h>
 
 //for the basic operation api
 #include <iostream>
@@ -19,7 +19,9 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
-#include <ctype>
+#include <cctype>
+#include <cstring>
+#include <memory>
 
 #define VALVE_OF_SOCKIO_BUFFER 1024
 
@@ -43,34 +45,39 @@ typedef struct
 class BasicSocket
 {
 	public:
-		BasicSocket(file *sock_conf);//listen socket or client socket will use
+		BasicSocket();
+		BasicSocket(FILE *sock_conf);//listen socket or client socket will use
 		//BasicSocket(sock_fd sock_id, struct sockaddr_in sock_addr_data);//service socket use
-		BasicSocket(fstream sock_conf);//in c++ style
+		BasicSocket(fstream &sock_conf);//in c++ style
 		~BasicSocket();
 		//bool InitSock()
 		sock_fd GetSockId() const;
-		sock_addr GetSockAddr() const;
-		String RecvFromSock();
-		bool SendBySock(string message_to_send);
+		struct sockaddr_in GetSockAddr() const;
+		string RecvFromSock();
+		int SendBySock(string message_to_send);
+		void SetConfigure(string configure_tag, string configure_content);
+		void SwitchToStandardTag(string &configure_tag);
 		//bool ReInitSock(sock_fd sock_id, struct sockaddr_in sock_addr_data);
 		bool CloseSocket();
 	protected:
 		struct sockaddr_in sockAddr;
 		sock_fd sockId;
 		IOBuffer sockInputBuff;
+		int IdentifyTagType(string configure_tag);
+		bool IsDefaultCommunicationMode() const;
 		
 	private:
 		int sockMode;
 		bool IsDefaultSockMode() const;
-		int IdentifySOckMode(string configure_content) const;
-		
+		int IdentifySockMode(string configure_content) const;
+				
 };
 
 class ClientSocket : protected BasicSocket
 {
-	public
-		ClientSocket(file *sock_conf);
-		ClientSocket(fstream sock_conf);
+	public:
+		ClientSocket(FILE *sock_conf);
+		ClientSocket(fstream &sock_conf);
 		bool Connect();//after the construction, use the socket info to make the connection, client will use
 			
 };
@@ -86,9 +93,10 @@ class ServerOperateSocket : protected BasicSocket
 class ServerListenSocket : protected BasicSocket
 {
 	public:
+		ServerListenSocket(fstream &conf);
 		bool BindIpAddrAndPort();
 		void ListenClientApplication(int listen_array_length);
-		void AcceptClientSocket();
+		sock_fd AcceptClientSocket();
 };
 
 #endif

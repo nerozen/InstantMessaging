@@ -1,6 +1,9 @@
 #include "Socket.h"
+BasicSocket::BasicSocket()
+{
 
-BasicSocket::BasicSocket(fstream sock_conf)
+}
+BasicSocket::BasicSocket(fstream &sock_conf)
 {
 	this->sockMode = -1;
 	if(!sock_conf)
@@ -16,15 +19,15 @@ BasicSocket::BasicSocket(fstream sock_conf)
 		while(sock_conf.getline(inputLine, sizeof(inputLine)))
 		{
 			string originalConfigure(inputLine);
-			int borderIndex = originalConfigure.index('=', 1);
+			int borderIndex = originalConfigure.find('=');
 			int contentLength = originalConfigure.size() - (borderIndex + 1);
-			string configureTag = originalConfigure.substring(0, (borderIndex+1));
-			string configureContent = originalConfigure.substring(borderIndex, length);
+			string configureTag = originalConfigure.substr(0, (borderIndex+1));
+			string configureContent = originalConfigure.substr(borderIndex, contentLength);
 
 			cout<< configureTag.c_str() <<endl;
 			cout<< configureContent.c_str() <<endl;
 
-			this->SetCongfigure(configrueTag, configureContent);
+			this->SetConfigure(configureTag, configureContent);
 		}	
 	}
 	if(!(this->sockId = socket(AF_INET, SOCK_STREAM, 0)))//根据UDP选项和TCP选项有不同的创建方法，这个创建socket的分支后面要重写
@@ -33,9 +36,9 @@ BasicSocket::BasicSocket(fstream sock_conf)
 	}
 }
 
-void BasicSocket::SetConfigure(string congfiugre_tag, string configure_content)
+void BasicSocket::SetConfigure(string configure_tag, string configure_content)
 {
-	int tagType = IdentifyTagType(configure_tag)
+	int tagType = IdentifyTagType(configure_tag);
 	{
 		switch(tagType)
 		{
@@ -43,11 +46,12 @@ void BasicSocket::SetConfigure(string congfiugre_tag, string configure_content)
 			this->sockAddr.sin_addr.s_addr = inet_addr(configure_content.c_str());
 			break;
 		case SOCK_CONFIGURE_TAG_PORT:
-			int port = atoi(configure_content.c_str());
-			this->sock.sin_port = hton(port);
+			{			
+				int port = atoi(configure_content.c_str());
+				this->sockAddr.sin_port = htons(port);
+			}
 			break;
 		case SOCK_CONFIGURE_TAG_SOCKTYPE: //UDP OR TCP
-			//
 			this->sockMode = IdentifySockMode(configure_content);
 			if(this->sockMode < 0)
 			{
@@ -72,7 +76,7 @@ void BasicSocket::SwitchToStandardTag(string &configure_tag)
 int BasicSocket::IdentifyTagType(string configure_tag)
 {
 	int tagType = 0;
-	SwitchToStandardTag(configure_tag)
+	SwitchToStandardTag(configure_tag);
 	if(configure_tag == "IP")
 	{
 		tagType = SOCK_CONFIGURE_TAG_IP;
@@ -88,19 +92,18 @@ int BasicSocket::IdentifyTagType(string configure_tag)
 		tagType = SOCK_CONFIGURE_TAG_SOCKTYPE;
 		return tagType;
 	}
-	//....
-	return tagTYpe;
+	return tagType;
 }
 
 
 int BasicSocket::IdentifySockMode(string configure_content) const
 {
 	int sockMode;
-	if(strcmp(configure_content.c_str(), "TCP") == 0)
+	if(configure_content == "TCP")
 	{
 		sockMode = SOCKMODE_TCP;	
 	}
-	else if(strcmp(configure_content.c_str(), "UDP") == 0)
+	else if(configure_content == "UDP")
 		{
 			sockMode = SOCKMODE_UDP;
 		}
@@ -113,31 +116,31 @@ int BasicSocket::IdentifySockMode(string configure_content) const
 
 int BasicSocket::SendBySock(string message_to_send)
 {
-	char *messageToSend = message_to_send.c_str();
+	const char *messageToSend = message_to_send.c_str();
 	int bufferSize = strlen(messageToSend);
 	int sendBiteAmount;
-	sendBiteAmount = send(this->sockid, messagetosend, bufferSize, 0);
-	return ssendBiteAmount;	
+	sendBiteAmount = send(this->sockId, messageToSend, bufferSize, 0);
+	return sendBiteAmount;	
 }
 
 string BasicSocket::RecvFromSock()
 {
-	memset(this->sockInputBuff.buffer);
+	memset(this->sockInputBuff.buffer, 0, 1024);
 	recv(this->sockId, this->sockInputBuff.buffer, this->sockInputBuff.bufferSize, 0);
 	string RecivedMessage(this->sockInputBuff.buffer);
 	return RecivedMessage;
 }
 
-BasicSocket::BasicSocket(file *sock_conf)//open the conf file in the C style(using file pointer)
+BasicSocket::BasicSocket(FILE *sock_conf)//open the conf file in the C style(using file pointer)
 {
-	while(!eof(sock_conf))
+	while(!feof(sock_conf))
 	{
-		
+		//int a;
 	}
 }
 
 
 bool BasicSocket::IsDefaultCommunicationMode() const
 {
-	return sockMode == 1 ? true : false;
+	return ((sockMode == 1)? true : false);
 }
